@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body>
+<p>
+<input type="button" value="发送命令" id="j_send_msg">
+<select id="j_cmd">
+<option value="cs_match">寻找基友</option>
+<option value="cs_start">开始游戏</option>
+</select>
+</p>
+<ul id="msg-list">
+
+</ul>
+<script src="/static/js/jquery.min.js"></script>
+<script src="/static/js/socket.io-1.1.0.js"></script>
+<script>
+
+$("#j_send_msg").on('click', function(){
+    var cmd = $('#j_cmd').val();
+    var msg = {
+        'action': cmd,
+        'data': {}
+    };
+    socket.emit(msg.action, msg);
+});
+
+
+var socket = io('/rich', {
+    'reconnection': false
+});
+var GAME = {
+    'user' : null
+};
+
+//欢迎消息
+socket.on('sm-welcome', function(msg){
+    console.log(msg);
+    GAME.user = msg.data.user;
+    var html = "<li> i am the slave : " + JSON.stringify(GAME.user) +
+        "</li>";
+    $("#msg-list").append(html);
+    $("#msg-list").append("<li> my hero : " + JSON.stringify(msg.data.hero) + "</li>");
+});
+
+var MSG_CONF = {
+    'sc_create_player': {
+        'msg_prefix': 'a new user'
+    },
+    'sc_user_enter_room': {
+        'msg_prefix': 'user enter room'
+    },
+    'sm-attack': {
+        'msg_prefix': 'boss was attacked'
+    },
+    'sm-shape-list':{
+        'msg_prefix': 'current shapes'
+    },
+    'sm-gameover': {
+        'msg_prefix': 'gameover'
+    }
+};
+
+for(var key in MSG_CONF){
+    (function(){
+        var action = key;
+        socket.on(action, function(msg){
+            var prefix = MSG_CONF[action]['msg_prefix'];
+            var html = '<li>' + prefix + ' : ' + JSON.stringify(msg.data) + '</li>';
+            $("#msg-list").append(html);
+        });
+    })();
+}
+
+</script>
+</body>
+</html>
